@@ -4,7 +4,7 @@
  * ========================================================== */
 window.CARTE_SONORE_CONFIG = {
   // URL de votre worker API (sans / final)
-  API_URL: 'carte-sonore-anthea.gael-maignan.workers.dev',
+  API_URL: 'https://carte-sonore-anthea.gael-maignan.workers.dev',
 
   // Worker de streaming existant
   STREAM_URL: 'https://stream.gael-maignan.workers.dev/',
