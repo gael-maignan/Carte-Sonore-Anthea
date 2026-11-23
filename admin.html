@@ -7,52 +7,97 @@
 <title>Administration – Carte sonore</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
-  :root { --ink: #1d2433; --muted: #6b7385; --line: #e4e7ee; --bg: #f4f6fa; --accent: #e4572e; --blue: #2f6fde; --ok: #1a7f4b; --err: #b42318; }
-  * { box-sizing: border-box; }
+  :root { --ink: #1d2433; --muted: #6b7385; --line: #e2e5eb; --bg: #f4f5f8; --accent: #e4572e; --accent-dark: #b83f1d; --blue: #2f6fde; --ok: #1a7f4b; --err: #b42318; --h: 36px; }
+  * { box-sizing: border-box; border-radius: 0; }
   html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); font-size: 14px; }
+  button { font: inherit; color: inherit; }
+  .ico { width: 16px; height: 16px; display: block; fill: currentColor; flex: none; }
+  [hidden] { display: none !important; }
+
   #layout { display: grid; grid-template-columns: 430px 1fr; height: 100%; }
   aside { overflow-y: auto; padding: 16px; border-right: 1px solid var(--line); background: var(--bg); }
-  #map { height: 100%; }
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  header h1 { font-size: 17px; margin: 0; }
+  #map { height: 100%; background: #eef0f2; }
+  .tiles-light { filter: grayscale(1) brightness(1.06) contrast(.88); }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  h1 { font-size: 17px; font-weight: 650; margin: 0; line-height: 1.2; }
   .links { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-  .links a, .links button { font: inherit; font-size: 13px; color: var(--blue); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; text-decoration: none; cursor: pointer; }
-  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
-  .card h2 { font-size: 15px; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: center; }
-  label { display: block; font-weight: 600; font-size: 13px; margin: 10px 0 4px; }
-  input[type=text], input[type=search], input[type=password], textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: #fff; }
-  textarea { min-height: 80px; resize: vertical; }
-  .row { display: flex; gap: 8px; } .row > * { flex: 1; }
-  .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
-  .drop { display: block; border: 2px dashed #cdd3df; border-radius: 10px; padding: 16px; text-align: center; color: var(--muted); cursor: pointer; font-weight: 400; margin: 0; }
-  .drop.over { border-color: var(--accent); background: #fff6f2; }
+  .links a, .links button { height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 13px; line-height: 1; color: var(--ink); background: #fff; border: 1px solid var(--line); text-decoration: none; cursor: pointer; }
+  .links a:hover, .links button:hover { border-color: #c4cad6; }
+
+  .card { background: #fff; border: 1px solid var(--line); padding: 14px; margin-bottom: 14px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; min-height: 32px; }
+  .card-head h2 { font-size: 15px; margin: 0; line-height: 1; }
+
+  label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 5px; }
+  input[type=text], input[type=search], input[type=password], textarea { width: 100%; height: var(--h); padding: 0 10px; border: 1px solid var(--line); font: inherit; background: #fff; }
+  textarea { height: auto; min-height: 84px; padding: 8px 10px; resize: vertical; }
+  input:focus, textarea:focus { outline: 2px solid rgba(228,87,46,.35); outline-offset: -1px; border-color: var(--accent); }
+  .row { display: flex; gap: 8px; } .row > * { flex: 1; min-width: 0; }
+
+  .drop { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 64px; border: 1px dashed #c4cad6; padding: 12px; color: var(--muted); cursor: pointer; font-weight: 400; margin: 0; text-align: left; }
+  .drop.over { border-color: var(--accent); background: #fdf0eb; }
   .drop input { display: none; }
-  .drop strong { color: var(--ink); }
-  audio { width: 100%; margin-top: 8px; height: 36px; }
-  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-  .btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 9px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+  .drop .ico { width: 20px; height: 20px; }
+  .drop strong { color: var(--ink); display: block; }
+  .drop small { display: block; margin-top: 2px; }
+
+  .btn { height: var(--h); display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; border: 1px solid var(--line); background: #fff; font-weight: 600; line-height: 1; cursor: pointer; }
+  .btn:hover { border-color: #c4cad6; }
+  .btn.sm { height: 32px; padding: 0 10px; font-size: 13px; }
+  .btn.icon { width: 32px; padding: 0; }
   .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn.danger { color: var(--err); border-color: #f1c5c0; margin-left: auto; }
+  .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  .btn.danger { color: var(--err); border-color: #efc3bd; margin-left: auto; }
   .btn:disabled { opacity: .55; cursor: wait; }
-  .progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 12px; display: none; }
-  .progress.show { display: block; } .progress div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+  .progress { height: 4px; background: var(--line); overflow: hidden; margin-top: 14px; }
+  .progress div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
   .msg { margin-top: 10px; font-size: 13px; min-height: 1em; white-space: pre-wrap; }
   .msg.ok { color: var(--ok); } .msg.error { color: var(--err); }
-  .meta { display: inline-block; background: var(--bg); border-radius: 6px; padding: 3px 8px; color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { height: 26px; display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; background: var(--bg); color: var(--muted); font-size: 12px; line-height: 1; text-decoration: none; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  a.chip { color: var(--blue); }
+  .chip .ico { width: 13px; height: 13px; }
+
+  /* Lecteur */
+  .pl { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .pl-btn { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; background: var(--ink); color: #fff; cursor: pointer; }
+  .pl-btn .ico { width: 18px; height: 18px; }
+  .pl-time { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 82px; text-align: right; }
+  .pl-seek { --p: 0%; flex: 1; min-width: 0; height: 20px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+  .pl-seek::-webkit-slider-runnable-track { height: 3px; background: linear-gradient(to right, var(--accent) var(--p), var(--line) var(--p)); }
+  .pl-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; background: var(--ink); border: 0; }
+  .pl-seek::-moz-range-track { height: 3px; background: var(--line); }
+  .pl-seek::-moz-range-progress { height: 3px; background: var(--accent); }
+  .pl-seek::-moz-range-thumb { width: 12px; height: 12px; background: var(--ink); border: 0; border-radius: 0; }
+
+  /* Liste */
   #list { list-style: none; margin: 10px 0 0; padding: 0; }
-  #list li { display: flex; align-items: center; gap: 8px; padding: 9px 4px; border-top: 1px solid var(--line); }
-  #list li.active { background: #fff6f2; }
+  #list li { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-top: 1px solid var(--line); }
+  #list li.active { background: #fdf0eb; }
+  #list li.empty { color: var(--muted); }
   #list .info { flex: 1; min-width: 0; cursor: pointer; }
   #list .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #list .m { color: var(--muted); font-size: 12px; }
-  #list button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
-  .pin { width: 26px; height: 26px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); display: grid; place-items: center; color: #fff; font-size: 12px; }
-  .pin.sel { background: var(--accent); width: 32px; height: 32px; font-size: 14px; }
-  .pin.other { background: var(--blue); }
+  #list .m { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  /* Marqueurs */
+  .pin { display: grid; place-items: center; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+  .pin.sel { width: 30px; height: 30px; background: var(--accent); }
+  .pin.sel .ico { width: 16px; height: 16px; }
+  .pin.other { width: 24px; height: 24px; background: var(--blue); }
+  .pin.other .ico { width: 13px; height: 13px; }
+  .leaflet-container { font-family: inherit; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-bar, .leaflet-bar a, .leaflet-tooltip, .leaflet-control-attribution { border-radius: 0 !important; }
+
+  /* Connexion */
   #login { position: fixed; inset: 0; background: rgba(29,36,51,.55); display: grid; place-items: center; z-index: 5000; }
-  #login.hidden { display: none; }
-  #login form { background: #fff; padding: 24px; border-radius: 14px; width: min(360px, 92vw); }
-  #login h2 { margin: 0 0 6px; font-size: 18px; }
+  #login form { background: #fff; padding: 24px; width: min(340px, 92vw); }
+  #login h2 { margin: 0 0 4px; font-size: 18px; }
+  #login .btn { width: 100%; }
+
   @media (max-width: 860px) {
     #layout { grid-template-columns: 1fr; grid-template-rows: 45vh auto; height: auto; }
     #map { height: 45vh; position: sticky; top: 0; z-index: 10; order: -1; }
@@ -65,7 +110,6 @@
 <div id="login">
   <form id="login-form">
     <h2>Administration</h2>
-    <p class="hint">Entrez le mot de passe défini dans le worker (ADMIN_PASSWORD).</p>
     <label for="pwd">Mot de passe</label>
     <input id="pwd" type="password" autocomplete="current-password" required>
     <div class="actions"><button class="btn primary" type="submit" id="login-btn">Se connecter</button></div>
@@ -75,57 +119,63 @@
 
 <div id="layout">
   <aside>
-    <header>
-      <h1>🎧 <span id="site-title">Carte sonore</span> – admin</h1>
-    </header>
+    <div class="top">
+      <h1 id="site-title">Carte sonore</h1>
+      <button id="logout" class="btn sm" type="button" data-ico="logout">Déconnexion</button>
+    </div>
     <div class="links">
-      <a href="index.html" target="_blank">🗺 Voir la carte</a>
-      <a id="sheet-link" href="#" target="_blank" rel="noopener">📄 Google Sheet</a>
-      <a id="drive-link" href="#" target="_blank" rel="noopener">📁 Dossier Drive</a>
-      <button id="logout" type="button">Se déconnecter</button>
+      <a href="index.html" target="_blank" data-ico="map">Voir la carte</a>
+      <a id="sheet-link" href="#" target="_blank" rel="noopener" data-ico="sheet">Google Sheet</a>
+      <a id="drive-link" href="#" target="_blank" rel="noopener" data-ico="folder">Dossier Drive</a>
     </div>
 
     <form class="card" id="form" novalidate>
-      <h2><span id="form-title">Ajouter un son</span><button type="button" class="btn" id="new-btn" style="padding:4px 10px;font-size:12px;display:none">+ Nouveau</button></h2>
+      <div class="card-head">
+        <h2 id="form-title">Ajouter un son</h2>
+        <button type="button" class="btn sm" id="new-btn" data-ico="plus" hidden>Nouveau</button>
+      </div>
 
       <div id="file-block">
         <label class="drop" id="drop">
           <input type="file" id="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.opus,.aac">
-          <span id="drop-text"><strong>Choisir un fichier audio</strong><br>ou le glisser ici</span>
+          <span id="drop-ico"></span>
+          <span id="drop-text"><strong>Choisir un fichier audio</strong></span>
         </label>
       </div>
-      <audio id="preview" controls preload="none" hidden></audio>
-      <div id="file-meta"></div>
+      <div class="pl" id="preview" hidden></div>
+      <div class="meta" id="file-meta"></div>
 
-      <label for="title">Titre *</label>
+      <label for="title">Titre</label>
       <input type="text" id="title" maxlength="200" required>
 
       <label for="description">Description</label>
       <textarea id="description" maxlength="5000"></textarea>
 
-      <label>Position *</label>
+      <label for="addr">Position</label>
       <div class="row">
-        <input type="text" id="addr" placeholder="Rechercher une adresse…">
-        <button type="button" class="btn" id="addr-btn" style="flex:none">Chercher</button>
+        <input type="text" id="addr" placeholder="Adresse">
+        <button type="button" class="btn icon" id="addr-btn" data-ico="search" aria-label="Rechercher" style="flex:none;width:var(--h)"></button>
       </div>
       <div class="row" style="margin-top:8px">
         <input type="text" id="lat" placeholder="Latitude" inputmode="decimal">
         <input type="text" id="lng" placeholder="Longitude" inputmode="decimal">
       </div>
-      <div class="hint">Cliquez sur la carte pour placer le son, puis déplacez le marqueur orange pour ajuster.</div>
 
-      <div class="progress" id="progress"><div></div></div>
+      <div class="progress" id="progress" hidden><div></div></div>
       <div class="actions">
-        <button class="btn primary" type="submit" id="save">Ajouter le son</button>
+        <button class="btn primary" type="submit" id="save">Ajouter</button>
         <button class="btn" type="button" id="cancel">Annuler</button>
-        <button class="btn danger" type="button" id="delete" hidden>Supprimer</button>
+        <button class="btn danger" type="button" id="delete" data-ico="trash" hidden>Supprimer</button>
       </div>
       <div class="msg" id="msg"></div>
     </form>
 
     <section class="card">
-      <h2><span>Sons existants (<span id="count">0</span>)</span><button class="btn" type="button" id="reload" style="padding:4px 10px;font-size:12px">↻</button></h2>
-      <input type="search" id="filter" placeholder="Filtrer…">
+      <div class="card-head">
+        <h2>Sons (<span id="count">0</span>)</h2>
+        <button class="btn sm icon" type="button" id="reload" data-ico="refresh" aria-label="Actualiser"></button>
+      </div>
+      <input type="search" id="filter" placeholder="Filtrer">
       <ul id="list"></ul>
     </section>
   </aside>
@@ -137,12 +187,37 @@
 <script>
 (() => {
   const CFG = window.CARTE_SONORE_CONFIG || {};
-  const API = (CFG.API_URL || '').replace(/\/+$/, '');
+  const API = (() => {
+    let u = String(CFG.API_URL || '').trim();
+    if (u && !/^https?:\/\//i.test(u)) u = 'https://' + u;
+    try { return new URL(u).origin; } catch { return ''; }
+  })();
   const MAX_MB = Number(CFG.MAX_UPLOAD_MB || 50);
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const num = v => { const n = parseFloat(String(v).replace(',', '.')); return Number.isFinite(n) ? n : null; };
-  const fmt = sec => { const s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60; return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`; };
+  const fmt = sec => { if (!Number.isFinite(sec)) return '0:00'; const s = Math.floor(sec), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60; return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`; };
+
+  const I = {
+    play: 'M8 5v14l11-7z',
+    pause: 'M6 5h4v14H6zM14 5h4v14h-4z',
+    note: 'M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z',
+    map: 'M15 5.1 9 3 3 5v16l6-2.1 6 2.1 6-2V3l-6 2.1zM15 19l-6-2.1V5l6 2.1V19z',
+    sheet: 'M3 3h18v18H3V3zm2 2v4h6V5H5zm8 0v4h6V5h-6zm-8 6v4h6v-4H5zm8 0v4h6v-4h-6zm-8 6v2h6v-2H5zm8 0v2h6v-2h-6z',
+    folder: 'M10 4H2v16h20V6H12l-2-2z',
+    logout: 'M10 17l1.4-1.4-2.6-2.6H20v-2H8.8l2.6-2.6L10 7l-5 5 5 5zM4 5h8V3H2v18h10v-2H4V5z',
+    plus: 'M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z',
+    search: 'M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
+    trash: 'M6 7h12l-1 14H7L6 7zm3-4h6l1 2h4v2H4V5h4l1-2z',
+    refresh: 'M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
+    upload: 'M5 20h14v-2H5v2zm0-10h4v6h6v-6h4l-7-7-7 7z',
+    clock: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.5 2.1-.8 1.3L11 13V7h2v5.4z',
+    file: 'M6 2h8l6 6v14H6V2zm7 1.5V9h5.5L13 3.5z',
+    external: 'M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zM19 19H5V5h7V3H5v16h14v-7h-2v7z'
+  };
+  const svg = d => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+  document.querySelectorAll('[data-ico]').forEach(el => el.insertAdjacentHTML('afterbegin', svg(I[el.dataset.ico])));
+  $('#drop-ico').outerHTML = svg(I.upload);
 
   $('#site-title').textContent = CFG.MAP_TITLE || 'Carte sonore';
   if (CFG.SHEET_URL) $('#sheet-link').href = CFG.SHEET_URL; else $('#sheet-link').hidden = true;
@@ -150,6 +225,33 @@
 
   let password = sessionStorage.getItem('cs_admin_pwd') || '';
   const state = { items: [], mode: 'new', editId: null, file: null, duration: null, previewUrl: null, busy: false };
+
+  /* ---------- Lecteur ---------- */
+  function createPlayer(root) {
+    root.innerHTML = '<button type="button" class="pl-btn" aria-label="Lecture"></button><input type="range" class="pl-seek" min="0" max="1000" value="0" aria-label="Position"><span class="pl-time">0:00</span>';
+    const audio = new Audio(); audio.preload = 'metadata';
+    const btn = root.querySelector('.pl-btn'), seek = root.querySelector('.pl-seek'), time = root.querySelector('.pl-time');
+    let fallback = null, dragging = false;
+    const dur = () => (Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : fallback);
+    const render = () => {
+      btn.innerHTML = svg(audio.paused ? I.play : I.pause);
+      const d = dur();
+      if (!dragging) seek.value = d ? Math.round(audio.currentTime / d * 1000) : 0;
+      seek.style.setProperty('--p', seek.value / 10 + '%');
+      time.textContent = fmt(audio.currentTime) + (d ? ' / ' + fmt(d) : '');
+    };
+    ['play', 'pause', 'timeupdate', 'loadedmetadata', 'durationchange', 'ended', 'emptied'].forEach(ev => audio.addEventListener(ev, render));
+    audio.addEventListener('error', () => { if (audio.getAttribute('src')) { audio.pause(); render(); msg('Lecture impossible.', 'error'); } });
+    btn.addEventListener('click', () => audio.paused ? audio.play().catch(() => {}) : audio.pause());
+    seek.addEventListener('input', () => { dragging = true; seek.style.setProperty('--p', seek.value / 10 + '%'); });
+    seek.addEventListener('change', () => { const d = dur(); if (d) audio.currentTime = seek.value / 1000 * d; dragging = false; });
+    render();
+    return {
+      load(src, duration, preload = 'metadata') { audio.preload = preload; audio.src = src; fallback = duration || null; render(); },
+      clear() { audio.pause(); audio.removeAttribute('src'); audio.load(); fallback = null; render(); }
+    };
+  }
+  const preview = createPlayer($('#preview'));
 
   /* ---------- API ---------- */
   async function api(path, { method = 'GET', json } = {}) {
@@ -159,9 +261,9 @@
     if (json !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(json); }
     let res;
     try { res = await fetch(API + path, { method, headers, body }); }
-    catch { throw new Error('Worker injoignable (vérifiez API_URL dans config.js et ALLOWED_ORIGINS dans le worker).'); }
+    catch { throw new Error(`Worker injoignable (${API || 'API_URL vide'}).`); }
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) { const e = new Error(data.error || 'Erreur ' + res.status); e.status = res.status; throw e; }
+    if (!res.ok) { const e = new Error(data.error || `Erreur ${res.status} sur ${API + path}`); e.status = res.status; throw e; }
     return data;
   }
 
@@ -170,14 +272,14 @@
       const xhr = new XMLHttpRequest();
       xhr.open('POST', API + '/upload');
       xhr.setRequestHeader('Authorization', 'Bearer ' + encodeURIComponent(password));
-      xhr.upload.onprogress = e => { if (e.lengthComputable) progress(e.loaded / e.total * 0.9, `Envoi… ${Math.round(e.loaded / e.total * 100)} %`); };
-      xhr.upload.onload = () => progress(0.95, 'Enregistrement dans Google Drive et dans la feuille…');
+      xhr.upload.onprogress = e => { if (e.lengthComputable) progress(e.loaded / e.total * 0.9, `Envoi ${Math.round(e.loaded / e.total * 100)} %`); };
+      xhr.upload.onload = () => progress(0.95, 'Enregistrement…');
       xhr.onload = () => {
         let d = {}; try { d = JSON.parse(xhr.responseText); } catch {}
         if (xhr.status >= 200 && xhr.status < 300) resolve(d);
-        else { const e = new Error(d.error || 'Erreur ' + xhr.status); e.status = xhr.status; reject(e); }
+        else { const e = new Error(d.error || `Erreur ${xhr.status} sur ${API}/upload`); e.status = xhr.status; reject(e); }
       };
-      xhr.onerror = () => reject(new Error('Erreur réseau pendant l\'envoi (fichier trop gros ? worker injoignable ?).'));
+      xhr.onerror = () => reject(new Error('Erreur réseau pendant l\'envoi.'));
       xhr.send(fd);
     });
   }
@@ -189,22 +291,25 @@
     return u.toString();
   }
 
-  /* ---------- UI helpers ---------- */
+  /* ---------- UI ---------- */
   function msg(text, type = '') { const el = $('#msg'); el.textContent = text; el.className = 'msg ' + type; }
   function progress(p, text) {
     const el = $('#progress');
-    if (p === null) { el.classList.remove('show'); el.firstElementChild.style.width = 0; return; }
-    el.classList.add('show'); el.firstElementChild.style.width = Math.round(p * 100) + '%';
+    if (p === null) { el.hidden = true; el.firstElementChild.style.width = 0; return; }
+    el.hidden = false; el.firstElementChild.style.width = Math.round(p * 100) + '%';
     if (text) msg(text);
   }
   function setBusy(b) { state.busy = b; ['#save', '#cancel', '#delete', '#new-btn'].forEach(s => $(s).disabled = b); }
   function handleErr(err) {
-    if (err.status === 401) { showLogin('Session expirée ou mot de passe incorrect.'); }
+    if (err.status === 401) showLogin('Mot de passe incorrect.');
     msg(err.message, 'error');
   }
+  const chip = (ico, text, href) => href
+    ? `<a class="chip" href="${esc(href)}" target="_blank" rel="noopener">${svg(I[ico])}<span>${esc(text)}</span></a>`
+    : `<span class="chip">${svg(I[ico])}<span>${esc(text)}</span></span>`;
 
-  /* ---------- Login ---------- */
-  function showLogin(text = '') { $('#login').classList.remove('hidden'); $('#login-msg').textContent = text; $('#pwd').focus(); }
+  /* ---------- Connexion ---------- */
+  function showLogin(text = '') { $('#login').hidden = false; $('#login-msg').textContent = text; $('#pwd').focus(); }
   $('#login-form').addEventListener('submit', async e => {
     e.preventDefault();
     password = $('#pwd').value;
@@ -212,8 +317,8 @@
     try {
       await api('/login', { method: 'POST' });
       sessionStorage.setItem('cs_admin_pwd', password);
-      $('#login').classList.add('hidden');
-      loadItems();
+      $('#login').hidden = true;
+      loadItems().then(fitAll).catch(handleErr);
     } catch (err) {
       $('#login-msg').textContent = err.message;
     } finally { $('#login-btn').disabled = false; }
@@ -221,15 +326,21 @@
   $('#logout').addEventListener('click', () => { sessionStorage.removeItem('cs_admin_pwd'); password = ''; $('#pwd').value = ''; showLogin(); });
 
   /* ---------- Carte ---------- */
-  const map = L.map('map').setView(CFG.MAP_CENTER || [46.6, 2.4], CFG.MAP_ZOOM || 6);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 20
+  const map = L.map('map', { attributionControl: true }).setView(CFG.MAP_CENTER || [46.6, 2.4], CFG.MAP_ZOOM || 6);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, className: 'tiles-light',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(map);
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
   const othersLayer = L.layerGroup().addTo(map);
-  const selIcon = L.divIcon({ className: '', html: '<div class="pin sel">♪</div>', iconSize: [32, 32], iconAnchor: [16, 16] });
-  const otherIcon = L.divIcon({ className: '', html: '<div class="pin other">♪</div>', iconSize: [26, 26], iconAnchor: [13, 13] });
+  const selIcon = L.divIcon({ className: '', html: `<div class="pin sel">${svg(I.note)}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+  const otherIcon = L.divIcon({ className: '', html: `<div class="pin other">${svg(I.note)}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
   let selMarker = null;
+
+  function fitAll(items = state.items) {
+    const pts = items.filter(i => Number.isFinite(i.lat) && Number.isFinite(i.lng));
+    if (pts.length) map.fitBounds(pts.map(i => [i.lat, i.lng]), { padding: [40, 40], maxZoom: 16 });
+  }
 
   function setPosition(lat, lng, { pan = false } = {}) {
     lat = Math.round(lat * 1e6) / 1e6; lng = Math.round(lng * 1e6) / 1e6;
@@ -275,12 +386,11 @@
   function getDuration(url) {
     return new Promise(resolve => {
       const a = new Audio(); a.preload = 'metadata';
-      const done = d => resolve(Number.isFinite(d) && d > 0 ? d : null);
+      let finished = false;
+      const done = d => { if (finished) return; finished = true; resolve(Number.isFinite(d) && d > 0 ? d : null); };
       a.onloadedmetadata = () => {
-        if (a.duration === Infinity) { // certains webm/ogg : astuce pour forcer le calcul
-          a.currentTime = 1e7;
-          a.ontimeupdate = () => { a.ontimeupdate = null; done(a.duration); };
-        } else done(a.duration);
+        if (a.duration === Infinity) { a.currentTime = 1e7; a.ontimeupdate = () => { a.ontimeupdate = null; done(a.duration); }; }
+        else done(a.duration);
       };
       a.onerror = () => done(null);
       setTimeout(() => done(null), 15000);
@@ -296,11 +406,12 @@
     if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
     state.file = file;
     state.previewUrl = URL.createObjectURL(file);
-    $('#drop-text').innerHTML = `<strong>${esc(file.name)}</strong><br>${(file.size / 1048576).toFixed(1)} Mo — cliquer pour changer`;
-    $('#preview').src = state.previewUrl; $('#preview').hidden = false;
+    $('#drop-text').innerHTML = `<strong>${esc(file.name)}</strong><small>${(file.size / 1048576).toFixed(1)} Mo</small>`;
     if (!$('#title').value.trim()) $('#title').value = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
     state.duration = await getDuration(state.previewUrl);
-    $('#file-meta').innerHTML = `<span class="meta">⏱ Durée : ${state.duration ? fmt(state.duration) : 'inconnue'}</span>`;
+    preview.load(state.previewUrl, state.duration);
+    $('#preview').hidden = false;
+    $('#file-meta').innerHTML = chip('clock', state.duration ? fmt(state.duration) : 'Durée inconnue');
     msg('');
   }
   $('#file').addEventListener('change', e => setFile(e.target.files[0]));
@@ -315,10 +426,10 @@
     if (state.previewUrl) URL.revokeObjectURL(state.previewUrl); state.previewUrl = null;
     $('#form').reset();
     $('#form-title').textContent = 'Ajouter un son';
-    $('#save').textContent = 'Ajouter le son';
-    $('#file-block').hidden = false; $('#delete').hidden = true; $('#new-btn').style.display = 'none';
-    $('#drop-text').innerHTML = '<strong>Choisir un fichier audio</strong><br>ou le glisser ici';
-    $('#preview').pause(); $('#preview').removeAttribute('src'); $('#preview').hidden = true;
+    $('#save').textContent = 'Ajouter';
+    $('#file-block').hidden = false; $('#delete').hidden = true; $('#new-btn').hidden = true;
+    $('#drop-text').innerHTML = '<strong>Choisir un fichier audio</strong>';
+    preview.clear(); $('#preview').hidden = true;
     $('#file-meta').innerHTML = '';
     clearPosition(); progress(null);
     if (!keepMsg) msg('');
@@ -329,11 +440,11 @@
     const it = state.items.find(i => i.id === id); if (!it) return startNew();
     state.mode = 'edit'; state.editId = id; state.file = null;
     $('#form-title').textContent = 'Modifier le son';
-    $('#save').textContent = 'Enregistrer les modifications';
-    $('#file-block').hidden = true; $('#delete').hidden = false; $('#new-btn').style.display = '';
+    $('#save').textContent = 'Enregistrer';
+    $('#file-block').hidden = true; $('#delete').hidden = false; $('#new-btn').hidden = false;
     $('#title').value = it.title; $('#description').value = it.description;
-    $('#preview').src = streamUrl(it.id); $('#preview').hidden = false;
-    $('#file-meta').innerHTML = `<span class="meta">📎 ${esc(it.fileName || it.id)}${it.duration ? ' · ⏱ ' + esc(it.duration) : ''}</span> <a class="meta" href="${esc(it.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Drive ↗</a>`;
+    preview.load(streamUrl(it.id), it.durationSeconds, 'none'); $('#preview').hidden = false;
+    $('#file-meta').innerHTML = chip('file', it.fileName || it.id) + (it.duration ? chip('clock', it.duration) : '') + chip('external', 'Drive', it.driveUrl);
     if (Number.isFinite(it.lat) && Number.isFinite(it.lng)) setPosition(it.lat, it.lng, { pan: true }); else clearPosition();
     progress(null);
     if (!keepMsg) msg('');
@@ -351,9 +462,9 @@
     const title = $('#title').value.trim();
     const description = $('#description').value.trim();
     const lat = num($('#lat').value), lng = num($('#lng').value);
-    if (state.mode === 'new' && !state.file) return msg('Choisissez un fichier audio.', 'error');
-    if (!title) return msg('Le titre est obligatoire.', 'error');
-    if (lat === null || lng === null) return msg('Choisissez une position en cliquant sur la carte.', 'error');
+    if (state.mode === 'new' && !state.file) return msg('Fichier audio manquant.', 'error');
+    if (!title) return msg('Titre manquant.', 'error');
+    if (lat === null || lng === null) return msg('Position manquante.', 'error');
 
     setBusy(true);
     try {
@@ -364,16 +475,16 @@
         fd.append('description', description);
         fd.append('lat', lat); fd.append('lng', lng);
         if (state.duration) fd.append('duration', state.duration);
-        progress(0, 'Envoi… 0 %');
+        progress(0, 'Envoi 0 %');
         await uploadWithProgress(fd);
         await loadItems();
         startNew(true);
-        msg('✔ Son ajouté à la carte.', 'ok');
+        msg('Son ajouté.', 'ok');
       } else {
         await api('/update', { method: 'POST', json: { id: state.editId, title, description, lat, lng } });
         await loadItems();
         edit(state.editId, true);
-        msg('✔ Modifications enregistrées.', 'ok');
+        msg('Modifications enregistrées.', 'ok');
       }
     } catch (err) { progress(null); handleErr(err); }
     finally { setBusy(false); }
@@ -382,13 +493,13 @@
   /* ---------- Supprimer ---------- */
   $('#delete').addEventListener('click', async () => {
     const it = state.items.find(i => i.id === state.editId); if (!it) return;
-    if (!confirm(`Supprimer « ${it.title} » ?\n\nLa ligne sera retirée de la feuille et le fichier placé dans la corbeille du Drive.`)) return;
+    if (!confirm(`Supprimer « ${it.title} » ?`)) return;
     setBusy(true);
     try {
       const d = await api('/delete', { method: 'POST', json: { id: it.id } });
       await loadItems();
       startNew(true);
-      msg(d.warning ? '⚠ ' + d.warning : '✔ Son supprimé.', d.warning ? 'error' : 'ok');
+      msg(d.warning ? d.warning : 'Son supprimé.', d.warning ? 'error' : 'ok');
     } catch (err) { handleErr(err); }
     finally { setBusy(false); }
   });
@@ -398,11 +509,12 @@
     const q = $('#filter').value.trim().toLowerCase();
     const list = state.items.filter(it => !q || (it.title + ' ' + it.description).toLowerCase().includes(q));
     $('#count').textContent = state.items.length;
-    $('#list').innerHTML = list.length ? '' : '<li class="hint">Aucun son pour l\'instant.</li>';
+    $('#list').innerHTML = list.length ? '' : '<li class="empty">Aucun son</li>';
     list.forEach(it => {
       const li = document.createElement('li');
       if (it.id === state.editId) li.className = 'active';
-      li.innerHTML = `<div class="info"><div class="t">${esc(it.title)}</div><div class="m">${esc(it.duration || '–')} · ${Number.isFinite(it.lat) ? it.lat.toFixed(4) + ', ' + it.lng.toFixed(4) : 'sans position'}</div></div><button type="button">Modifier</button>`;
+      const coords = Number.isFinite(it.lat) ? `${it.lat.toFixed(4)}, ${it.lng.toFixed(4)}` : '';
+      li.innerHTML = `<div class="info"><div class="t">${esc(it.title)}</div><div class="m">${[it.duration, coords].filter(Boolean).map(esc).join(' · ')}</div></div><button type="button" class="btn sm">Modifier</button>`;
       const go = () => { if (!state.busy) edit(it.id); };
       li.querySelector('.info').addEventListener('click', go);
       li.querySelector('button').addEventListener('click', go);
@@ -421,14 +533,14 @@
 
   /* ---------- Démarrage ---------- */
   if (!API || /VOTRE-SOUS-DOMAINE/.test(API)) {
-    showLogin('⚠ Configurez API_URL dans config.js avant de continuer.');
+    showLogin('API_URL manquante dans config.js.');
   } else if (!password) {
     showLogin();
   } else {
     api('/login', { method: 'POST' })
-      .then(() => { $('#login').classList.add('hidden'); return loadItems(); })
-      .then(items => { const pts = items.filter(i => Number.isFinite(i.lat)); if (pts.length) map.fitBounds(pts.map(i => [i.lat, i.lng]), { padding: [40, 40], maxZoom: 16 }); })
-      .catch(err => err.status === 401 ? showLogin('Mot de passe incorrect.') : (showLogin(err.message)));
+      .then(() => { $('#login').hidden = true; return loadItems(); })
+      .then(fitAll)
+      .catch(err => showLogin(err.status === 401 ? 'Mot de passe incorrect.' : err.message));
   }
 })();
 </script>

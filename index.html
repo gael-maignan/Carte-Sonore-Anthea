@@ -6,68 +6,98 @@
 <title>Carte sonore</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
-  :root {
-    --ink: #1d2433; --muted: #6b7385; --line: #e4e7ee; --bg: #f7f8fb;
-    --accent: #e4572e; --accent-dark: #b83f1d; --panel-w: 340px;
-  }
-  * { box-sizing: border-box; }
+  :root { --ink: #1d2433; --muted: #6b7385; --line: #e2e5eb; --bg: #f6f7f9; --accent: #e4572e; --accent-dark: #b83f1d; --panel-w: 340px; --h: 36px; }
+  * { box-sizing: border-box; border-radius: 0; }
   html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+  button { font: inherit; color: inherit; }
+  .ico { width: 18px; height: 18px; display: block; fill: currentColor; flex: none; }
+
+  /* Barre du haut */
   .topbar { position: fixed; inset: 0 0 auto 0; height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 16px; background: #fff; border-bottom: 1px solid var(--line); z-index: 1000; }
-  .topbar h1 { font-size: 18px; margin: 0; flex: 1; display: flex; align-items: center; gap: 8px; }
-  .topbar h1 .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(228,87,46,.18); }
-  .btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); }
-  .btn:hover { border-color: #c9cfdb; }
+  .topbar h1 { font-size: 17px; font-weight: 650; margin: 0; flex: 1; line-height: 1; }
+  .btn { height: var(--h); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 12px; border: 1px solid var(--line); background: #fff; font-size: 14px; line-height: 1; cursor: pointer; }
+  .btn:hover { border-color: #c4cad6; }
+
+  /* Liste */
   #app { position: fixed; inset: 56px 0 0 0; display: flex; }
-  #panel { width: var(--panel-w); background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; transition: margin .25s; }
+  #panel { width: var(--panel-w); flex: none; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; transition: margin .25s; }
   #panel.hidden { margin-left: calc(-1 * var(--panel-w)); }
   #panel .search { padding: 12px; border-bottom: 1px solid var(--line); }
-  #panel input { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 14px; }
+  #filter { width: 100%; height: var(--h); padding: 0 10px; border: 1px solid var(--line); font: inherit; font-size: 14px; background: #fff; }
   #list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
-  #list li { padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; display: flex; gap: 10px; align-items: flex-start; }
+  #list li { padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer; display: flex; gap: 12px; align-items: center; }
   #list li:hover { background: var(--bg); }
-  #list li.active { background: #fff3ee; }
-  #list .play { flex: none; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--accent); color: #fff; cursor: pointer; font-size: 13px; }
-  #list .t { font-weight: 600; font-size: 14px; }
-  #list .m { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  #list li.active { background: #fdf0eb; }
+  #list .info { min-width: 0; flex: 1; }
+  #list .t { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #list .m { color: var(--muted); font-size: 12px; margin-top: 3px; }
   #list .empty { color: var(--muted); cursor: default; }
-  #map { flex: 1; }
-  .sound-pin { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); display: grid; place-items: center; color: #fff; font-size: 13px; }
-  .sound-pin.playing { background: var(--accent-dark); animation: pulse 1.4s infinite; }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(228,87,46,.6); } 100% { box-shadow: 0 0 0 16px rgba(228,87,46,0); } }
-  .pop h3 { margin: 0 0 4px; font-size: 16px; }
+  .play { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .play:hover { background: var(--accent-dark); }
+  .play .ico { width: 18px; height: 18px; }
+
+  #map { flex: 1; background: #eef0f2; }
+  .tiles-light { filter: grayscale(1) brightness(1.06) contrast(.88); }
+
+  /* Marqueurs */
+  .pin { width: 26px; height: 26px; display: grid; place-items: center; background: var(--accent); color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+  .pin .ico { width: 14px; height: 14px; }
+  .pin.playing { background: var(--accent-dark); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(228,87,46,.6); } 100% { box-shadow: 0 0 0 14px rgba(228,87,46,0); } }
+
+  /* Popup */
+  .leaflet-container { font-family: inherit; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-bar, .leaflet-bar a, .leaflet-tooltip, .leaflet-control-attribution { border-radius: 0 !important; }
+  .leaflet-popup-content-wrapper { box-shadow: 0 4px 18px rgba(0,0,0,.18); }
+  .leaflet-popup-content { margin: 14px 16px; }
+  .pop h3 { margin: 0 0 4px; font-size: 15px; padding-right: 12px; }
   .pop .m { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
-  .pop p { margin: 0 0 10px; white-space: pre-wrap; max-height: 160px; overflow: auto; }
-  .pop button { border: none; background: var(--accent); color: #fff; border-radius: 999px; padding: 8px 16px; font: inherit; font-weight: 600; cursor: pointer; }
-  #player { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.15); padding: 10px 14px; z-index: 1001; display: none; }
+  .pop p { margin: 0 0 12px; white-space: pre-wrap; max-height: 160px; overflow: auto; font-size: 13px; line-height: 1.45; }
+  .pop .listen { height: var(--h); display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 10px; border: none; background: var(--accent); color: #fff; font-weight: 600; font-size: 14px; line-height: 1; cursor: pointer; }
+  .pop .listen:hover { background: var(--accent-dark); }
+
+  /* Lecteur */
+  #player { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); background: #fff; border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0,0,0,.14); padding: 10px 12px; z-index: 1001; display: none; }
   #player.show { display: block; }
-  #player .row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  #player .now { flex: 1; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #player .x { border: none; background: none; font-size: 20px; cursor: pointer; color: var(--muted); }
-  #player audio { width: 100%; height: 36px; }
-  #status { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 14px; z-index: 1002; display: none; }
+  .pl-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  #now { flex: 1; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .close { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: none; background: none; color: var(--muted); cursor: pointer; }
+  .close:hover { color: var(--ink); }
+  .pl { display: flex; align-items: center; gap: 12px; }
+  .pl-btn { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; background: var(--ink); color: #fff; cursor: pointer; }
+  .pl-time { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 82px; text-align: right; }
+  .pl-seek { --p: 0%; flex: 1; min-width: 0; height: 20px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+  .pl-seek::-webkit-slider-runnable-track { height: 3px; background: linear-gradient(to right, var(--accent) var(--p), var(--line) var(--p)); }
+  .pl-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; background: var(--ink); border: 0; }
+  .pl-seek::-moz-range-track { height: 3px; background: var(--line); }
+  .pl-seek::-moz-range-progress { height: 3px; background: var(--accent); }
+  .pl-seek::-moz-range-thumb { width: 12px; height: 12px; background: var(--ink); border: 0; border-radius: 0; }
+
+  #status { position: fixed; top: 68px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 14px; font-size: 14px; z-index: 1002; display: none; }
   #status.show { display: block; } #status.error { background: #b42318; }
+
   @media (max-width: 720px) {
-    #panel { position: absolute; inset: 0 auto 0 0; z-index: 900; width: 85%; --panel-w: 85vw; box-shadow: 4px 0 20px rgba(0,0,0,.1); }
+    #panel { position: absolute; inset: 0 auto 0 0; z-index: 900; --panel-w: 85vw; box-shadow: 4px 0 20px rgba(0,0,0,.1); }
   }
 </style>
 </head>
 <body>
 <header class="topbar">
-  <h1><span class="dot"></span><span id="map-title">Carte sonore</span></h1>
-  <button class="btn" id="toggle">☰ Sons (<span id="count">0</span>)</button>
+  <h1 id="map-title">Carte sonore</h1>
+  <button class="btn" id="toggle" type="button"><span id="toggle-ico"></span><span>Sons (<span id="count">0</span>)</span></button>
 </header>
 
 <div id="app">
   <aside id="panel">
-    <div class="search"><input id="filter" type="search" placeholder="Rechercher un son…"></div>
+    <div class="search"><input id="filter" type="search" placeholder="Rechercher"></div>
     <ul id="list"></ul>
   </aside>
   <main id="map"></main>
 </div>
 
 <div id="player">
-  <div class="row"><span>🎧</span><span class="now" id="now"></span><button class="x" id="close" title="Fermer">×</button></div>
-  <audio id="audio" controls preload="none"></audio>
+  <div class="pl-head"><span id="now"></span><button class="close" id="close" type="button" aria-label="Fermer"></button></div>
+  <div class="pl" id="pl"></div>
 </div>
 <div id="status"></div>
 
@@ -76,23 +106,70 @@
 <script>
 (() => {
   const CFG = window.CARTE_SONORE_CONFIG || {};
-  const API = (CFG.API_URL || '').replace(/\/+$/, '');
+  const API = (() => {
+    let u = String(CFG.API_URL || '').trim();
+    if (u && !/^https?:\/\//i.test(u)) u = 'https://' + u;
+    try { return new URL(u).origin; } catch { return ''; }
+  })();
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = sec => { if (!Number.isFinite(sec)) return '0:00'; const s = Math.floor(sec), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60; return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`; };
+
+  const I = {
+    play: 'M8 5v14l11-7z',
+    pause: 'M6 5h4v14H6zM14 5h4v14h-4z',
+    note: 'M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z',
+    close: 'M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z',
+    menu: 'M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z'
+  };
+  const svg = d => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
 
   const title = CFG.MAP_TITLE || 'Carte sonore';
   $('#map-title').textContent = title; document.title = title;
+  $('#toggle-ico').outerHTML = svg(I.menu);
+  $('#close').innerHTML = svg(I.close);
 
   const isMobile = matchMedia('(max-width: 720px)').matches;
   if (isMobile) $('#panel').classList.add('hidden');
 
+  /* Carte : OpenStreetMap, sans clé, rendu clair en niveaux de gris */
   const map = L.map('map').setView(CFG.MAP_CENTER || [46.6, 2.4], CFG.MAP_ZOOM || 6);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 20
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, className: 'tiles-light',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(map);
 
-  const audio = $('#audio');
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+
+  /* Lecteur */
+  function createPlayer(root, onChange) {
+    root.innerHTML = '<button type="button" class="pl-btn" aria-label="Lecture"></button><input type="range" class="pl-seek" min="0" max="1000" value="0" aria-label="Position"><span class="pl-time">0:00</span>';
+    const audio = new Audio(); audio.preload = 'none';
+    const btn = root.querySelector('.pl-btn'), seek = root.querySelector('.pl-seek'), time = root.querySelector('.pl-time');
+    let fallback = null, dragging = false;
+    const dur = () => (Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : fallback);
+    const render = () => {
+      btn.innerHTML = svg(audio.paused ? I.play : I.pause);
+      btn.setAttribute('aria-label', audio.paused ? 'Lecture' : 'Pause');
+      const d = dur();
+      if (!dragging) seek.value = d ? Math.round(audio.currentTime / d * 1000) : 0;
+      seek.style.setProperty('--p', seek.value / 10 + '%');
+      time.textContent = fmt(audio.currentTime) + (d ? ' / ' + fmt(d) : '');
+    };
+    ['play', 'pause', 'timeupdate', 'loadedmetadata', 'durationchange', 'ended', 'emptied'].forEach(ev => audio.addEventListener(ev, () => { render(); onChange && onChange(); }));
+    btn.addEventListener('click', () => audio.paused ? audio.play().catch(() => {}) : audio.pause());
+    seek.addEventListener('input', () => { dragging = true; seek.style.setProperty('--p', seek.value / 10 + '%'); const d = dur(); if (d) time.textContent = fmt(seek.value / 1000 * d) + ' / ' + fmt(d); });
+    seek.addEventListener('change', () => { const d = dur(); if (d) audio.currentTime = seek.value / 1000 * d; dragging = false; });
+    render();
+    return {
+      audio,
+      load(src, duration) { audio.src = src; fallback = duration || null; render(); },
+      clear() { audio.pause(); audio.removeAttribute('src'); audio.load(); fallback = null; render(); }
+    };
+  }
+
+  const player = createPlayer($('#pl'), () => refreshActive());
+  const audio = player.audio;
   let items = [], markers = new Map(), currentId = null;
 
   function streamUrl(id) {
@@ -104,69 +181,77 @@
 
   function status(msg, error = false, ms = 0) {
     const el = $('#status');
-    el.textContent = msg; el.className = 'show' + (error ? ' error' : '');
-    if (ms) setTimeout(() => el.className = '', ms);
-    if (!msg) el.className = '';
+    el.textContent = msg; el.className = msg ? 'show' + (error ? ' error' : '') : '';
+    if (ms) setTimeout(() => { el.className = ''; }, ms);
   }
 
-  const icon = playing => L.divIcon({ className: '', html: `<div class="sound-pin${playing ? ' playing' : ''}">♪</div>`, iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -14] });
+  const isPlaying = id => id === currentId && !audio.paused;
+  const icon = playing => L.divIcon({ className: '', html: `<div class="pin${playing ? ' playing' : ''}">${svg(I.note)}</div>`, iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -15] });
 
   function popupContent(it) {
     const div = document.createElement('div');
     div.className = 'pop';
-    div.innerHTML = `<h3>${esc(it.title)}</h3>${it.duration ? `<div class="m">⏱ ${esc(it.duration)}</div>` : ''}${it.description ? `<p>${esc(it.description)}</p>` : ''}<button type="button">▶ Écouter</button>`;
-    div.querySelector('button').addEventListener('click', () => play(it));
+    div.innerHTML = `<h3>${esc(it.title)}</h3>${it.duration ? `<div class="m">${esc(it.duration)}</div>` : ''}${it.description ? `<p>${esc(it.description)}</p>` : ''}<button type="button" class="listen">${svg(isPlaying(it.id) ? I.pause : I.play)}<span>${isPlaying(it.id) ? 'Pause' : 'Écouter'}</span></button>`;
+    div.querySelector('.listen').addEventListener('click', () => toggle(it));
     return div;
   }
 
-  function play(it) {
-    if (currentId === it.id && !audio.paused) { audio.pause(); return; }
-    if (currentId !== it.id) {
-      audio.src = streamUrl(it.id);
-      currentId = it.id;
-      $('#now').textContent = it.title;
-    }
+  function toggle(it) {
+    if (currentId === it.id) { audio.paused ? audio.play().catch(() => {}) : audio.pause(); return; }
+    currentId = it.id;
+    player.load(streamUrl(it.id), it.durationSeconds);
+    $('#now').textContent = it.title;
     $('#player').classList.add('show');
     audio.play().catch(err => status('Lecture impossible : ' + err.message, true, 5000));
-    refreshActive();
     history.replaceState(null, '', '?son=' + encodeURIComponent(it.id));
+    refreshActive();
   }
 
   function refreshActive() {
-    markers.forEach((m, id) => m.setIcon(icon(id === currentId && !audio.paused)));
-    document.querySelectorAll('#list li[data-id]').forEach(li => li.classList.toggle('active', li.dataset.id === currentId));
+    markers.forEach((m, id) => {
+      m.setIcon(icon(isPlaying(id)));
+      if (m.isPopupOpen()) {
+        const b = m.getPopup().getElement()?.querySelector('.listen');
+        if (b) b.innerHTML = `${svg(isPlaying(id) ? I.pause : I.play)}<span>${isPlaying(id) ? 'Pause' : 'Écouter'}</span>`;
+      }
+    });
+    document.querySelectorAll('#list li[data-id]').forEach(li => {
+      li.classList.toggle('active', li.dataset.id === currentId);
+      li.querySelector('.play').innerHTML = svg(isPlaying(li.dataset.id) ? I.pause : I.play);
+    });
   }
-  audio.addEventListener('play', refreshActive);
-  audio.addEventListener('pause', refreshActive);
-  audio.addEventListener('error', () => { if (audio.src) status('Impossible de lire ce fichier audio.', true, 5000); });
-  $('#close').addEventListener('click', () => { audio.pause(); audio.removeAttribute('src'); audio.load(); currentId = null; $('#player').classList.remove('show'); refreshActive(); history.replaceState(null, '', location.pathname); });
+  audio.addEventListener('error', () => { if (audio.getAttribute('src')) { audio.pause(); refreshActive(); status('Impossible de lire ce fichier audio.', true, 5000); } });
+  $('#close').addEventListener('click', () => { player.clear(); currentId = null; $('#player').classList.remove('show'); refreshActive(); history.replaceState(null, '', location.pathname); });
 
   function focus(it, autoplay = false) {
     const m = markers.get(it.id); if (!m) return;
     map.flyTo(m.getLatLng(), Math.max(map.getZoom(), 15), { duration: .6 });
     setTimeout(() => m.openPopup(), 650);
-    if (autoplay) play(it);
+    if (autoplay) toggle(it);
     if (isMobile) $('#panel').classList.add('hidden');
   }
 
   function renderList() {
     const q = $('#filter').value.trim().toLowerCase();
     const list = items.filter(it => !q || (it.title + ' ' + it.description).toLowerCase().includes(q));
-    $('#list').innerHTML = list.length ? '' : '<li class="empty">Aucun son.</li>';
+    $('#list').innerHTML = list.length ? '' : '<li class="empty">Aucun son</li>';
     list.forEach(it => {
       const li = document.createElement('li');
       li.dataset.id = it.id;
-      li.innerHTML = `<button class="play" title="Écouter">▶</button><div><div class="t">${esc(it.title)}</div><div class="m">${esc(it.duration || '')}</div></div>`;
+      li.innerHTML = `<button class="play" type="button" aria-label="Écouter"></button><div class="info"><div class="t">${esc(it.title)}</div>${it.duration ? `<div class="m">${esc(it.duration)}</div>` : ''}</div>`;
       li.addEventListener('click', () => focus(it));
-      li.querySelector('.play').addEventListener('click', e => { e.stopPropagation(); focus(it, true); });
+      li.querySelector('.play').addEventListener('click', e => {
+        e.stopPropagation();
+        if (currentId === it.id) toggle(it); else focus(it, true);
+      });
       $('#list').appendChild(li);
     });
     refreshActive();
   }
 
   async function load() {
-    if (!API || /VOTRE-SOUS-DOMAINE/.test(API)) { status('Configurez API_URL dans config.js', true); return; }
-    status('Chargement des sons…');
+    if (!API || /VOTRE-SOUS-DOMAINE/.test(API)) { status('API_URL manquante dans config.js', true); return; }
+    status('Chargement…');
     try {
       const res = await fetch(API + '/list');
       const data = await res.json();
