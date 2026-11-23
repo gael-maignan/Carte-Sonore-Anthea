@@ -64,15 +64,15 @@
 
   /* Lecteur */
   .pl { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-  .pl-btn { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; background: var(--ink); color: #fff; cursor: pointer; }
+  .pl-btn { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; border-radius: 50%; background: var(--ink); color: #fff; cursor: pointer; }
   .pl-btn .ico { width: 18px; height: 18px; }
   .pl-time { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 82px; text-align: right; }
   .pl-seek { --p: 0%; flex: 1; min-width: 0; height: 20px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
   .pl-seek::-webkit-slider-runnable-track { height: 3px; background: linear-gradient(to right, var(--accent) var(--p), var(--line) var(--p)); }
-  .pl-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; background: var(--ink); border: 0; }
+  .pl-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; background: var(--ink); border: 0; border-radius: 50%; }
   .pl-seek::-moz-range-track { height: 3px; background: var(--line); }
   .pl-seek::-moz-range-progress { height: 3px; background: var(--accent); }
-  .pl-seek::-moz-range-thumb { width: 12px; height: 12px; background: var(--ink); border: 0; border-radius: 0; }
+  .pl-seek::-moz-range-thumb { width: 12px; height: 12px; background: var(--ink); border: 0; border-radius: 50%; }
 
   /* Liste */
   #list { list-style: none; margin: 10px 0 0; padding: 0; }
@@ -84,11 +84,9 @@
   #list .m { color: var(--muted); font-size: 12px; margin-top: 2px; }
 
   /* Marqueurs */
-  .pin { display: grid; place-items: center; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
-  .pin.sel { width: 30px; height: 30px; background: var(--accent); }
-  .pin.sel .ico { width: 16px; height: 16px; }
-  .pin.other { width: 24px; height: 24px; background: var(--blue); }
-  .pin.other .ico { width: 13px; height: 13px; }
+  .pin { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+  .pin.sel { width: 22px; height: 22px; background: var(--accent); }
+  .pin.other { width: 16px; height: 16px; background: var(--blue); }
   .leaflet-container { font-family: inherit; }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-bar, .leaflet-bar a, .leaflet-tooltip, .leaflet-control-attribution { border-radius: 0 !important; }
 
@@ -333,8 +331,8 @@
   }).addTo(map);
   map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
   const othersLayer = L.layerGroup().addTo(map);
-  const selIcon = L.divIcon({ className: '', html: `<div class="pin sel">${svg(I.note)}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
-  const otherIcon = L.divIcon({ className: '', html: `<div class="pin other">${svg(I.note)}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+  const selIcon = L.divIcon({ className: '', html: '<div class="pin sel"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+  const otherIcon = L.divIcon({ className: '', html: '<div class="pin other"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
   let selMarker = null;
 
   function fitAll(items = state.items) {
@@ -444,7 +442,7 @@
     $('#file-block').hidden = true; $('#delete').hidden = false; $('#new-btn').hidden = false;
     $('#title').value = it.title; $('#description').value = it.description;
     preview.load(streamUrl(it.id), it.durationSeconds, 'none'); $('#preview').hidden = false;
-    $('#file-meta').innerHTML = chip('file', it.fileName || it.id) + (it.duration ? chip('clock', it.duration) : '') + chip('external', 'Drive', it.driveUrl);
+    $('#file-meta').innerHTML = '';
     if (Number.isFinite(it.lat) && Number.isFinite(it.lng)) setPosition(it.lat, it.lng, { pan: true }); else clearPosition();
     progress(null);
     if (!keepMsg) msg('');

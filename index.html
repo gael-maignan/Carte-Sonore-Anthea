@@ -32,7 +32,7 @@
   #list .t { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #list .m { color: var(--muted); font-size: 12px; margin-top: 3px; }
   #list .empty { color: var(--muted); cursor: default; }
-  .play { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .play { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; border-radius: 50%; background: var(--accent); color: #fff; cursor: pointer; }
   .play:hover { background: var(--accent-dark); }
   .play .ico { width: 18px; height: 18px; }
 
@@ -40,10 +40,9 @@
   .tiles-light { filter: grayscale(1) brightness(1.06) contrast(.88); }
 
   /* Marqueurs */
-  .pin { width: 26px; height: 26px; display: grid; place-items: center; background: var(--accent); color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
-  .pin .ico { width: 14px; height: 14px; }
+  .pin { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
   .pin.playing { background: var(--accent-dark); animation: pulse 1.4s infinite; }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(228,87,46,.6); } 100% { box-shadow: 0 0 0 14px rgba(228,87,46,0); } }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(228,87,46,.6); } 100% { box-shadow: 0 0 0 12px rgba(228,87,46,0); } }
 
   /* Popup */
   .leaflet-container { font-family: inherit; }
@@ -53,8 +52,9 @@
   .pop h3 { margin: 0 0 4px; font-size: 15px; padding-right: 12px; }
   .pop .m { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
   .pop p { margin: 0 0 12px; white-space: pre-wrap; max-height: 160px; overflow: auto; font-size: 13px; line-height: 1.45; }
-  .pop .listen { height: var(--h); display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 10px; border: none; background: var(--accent); color: #fff; font-weight: 600; font-size: 14px; line-height: 1; cursor: pointer; }
-  .pop .listen:hover { background: var(--accent-dark); }
+  .pop .listen { display: inline-flex; align-items: center; gap: 10px; padding: 0; border: none; background: none; color: var(--ink); font-weight: 600; font-size: 14px; line-height: 1; cursor: pointer; }
+  .pop .listen .round { width: var(--h); height: var(--h); display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; }
+  .pop .listen:hover .round { background: var(--accent-dark); }
 
   /* Lecteur */
   #player { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); background: #fff; border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0,0,0,.14); padding: 10px 12px; z-index: 1001; display: none; }
@@ -64,14 +64,14 @@
   .close { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: none; background: none; color: var(--muted); cursor: pointer; }
   .close:hover { color: var(--ink); }
   .pl { display: flex; align-items: center; gap: 12px; }
-  .pl-btn { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; background: var(--ink); color: #fff; cursor: pointer; }
+  .pl-btn { flex: none; width: var(--h); height: var(--h); display: grid; place-items: center; padding: 0; border: none; border-radius: 50%; background: var(--ink); color: #fff; cursor: pointer; }
   .pl-time { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 82px; text-align: right; }
   .pl-seek { --p: 0%; flex: 1; min-width: 0; height: 20px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
   .pl-seek::-webkit-slider-runnable-track { height: 3px; background: linear-gradient(to right, var(--accent) var(--p), var(--line) var(--p)); }
-  .pl-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; background: var(--ink); border: 0; }
+  .pl-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; background: var(--ink); border: 0; border-radius: 50%; }
   .pl-seek::-moz-range-track { height: 3px; background: var(--line); }
   .pl-seek::-moz-range-progress { height: 3px; background: var(--accent); }
-  .pl-seek::-moz-range-thumb { width: 12px; height: 12px; background: var(--ink); border: 0; border-radius: 0; }
+  .pl-seek::-moz-range-thumb { width: 12px; height: 12px; background: var(--ink); border: 0; border-radius: 50%; }
 
   #status { position: fixed; top: 68px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 14px; font-size: 14px; z-index: 1002; display: none; }
   #status.show { display: block; } #status.error { background: #b42318; }
@@ -186,12 +186,14 @@
   }
 
   const isPlaying = id => id === currentId && !audio.paused;
-  const icon = playing => L.divIcon({ className: '', html: `<div class="pin${playing ? ' playing' : ''}">${svg(I.note)}</div>`, iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -15] });
+  const icon = playing => L.divIcon({ className: '', html: `<div class="pin${playing ? ' playing' : ''}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9], popupAnchor: [0, -10] });
+
+  const listenInner = id => `<span class="round">${svg(isPlaying(id) ? I.pause : I.play)}</span><span>${isPlaying(id) ? 'Pause' : 'Écouter'}</span>`;
 
   function popupContent(it) {
     const div = document.createElement('div');
     div.className = 'pop';
-    div.innerHTML = `<h3>${esc(it.title)}</h3>${it.duration ? `<div class="m">${esc(it.duration)}</div>` : ''}${it.description ? `<p>${esc(it.description)}</p>` : ''}<button type="button" class="listen">${svg(isPlaying(it.id) ? I.pause : I.play)}<span>${isPlaying(it.id) ? 'Pause' : 'Écouter'}</span></button>`;
+    div.innerHTML = `<h3>${esc(it.title)}</h3>${it.duration ? `<div class="m">${esc(it.duration)}</div>` : ''}${it.description ? `<p>${esc(it.description)}</p>` : ''}<button type="button" class="listen">${listenInner(it.id)}</button>`;
     div.querySelector('.listen').addEventListener('click', () => toggle(it));
     return div;
   }
@@ -212,7 +214,7 @@
       m.setIcon(icon(isPlaying(id)));
       if (m.isPopupOpen()) {
         const b = m.getPopup().getElement()?.querySelector('.listen');
-        if (b) b.innerHTML = `${svg(isPlaying(id) ? I.pause : I.play)}<span>${isPlaying(id) ? 'Pause' : 'Écouter'}</span>`;
+        if (b) b.innerHTML = listenInner(id);
       }
     });
     document.querySelectorAll('#list li[data-id]').forEach(li => {
