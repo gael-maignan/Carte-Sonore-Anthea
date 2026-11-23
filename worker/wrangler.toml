@@ -1,0 +1,18 @@
+# Optionnel : uniquement si vous déployez avec Wrangler (npx wrangler deploy)
+# Sinon, copiez-collez worker.js dans l'éditeur du tableau de bord Cloudflare.
+
+name = "carte-sonore-api"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+SPREADSHEET_ID = "COLLEZ_ICI_L_ID_DE_LA_GOOGLE_SHEET"
+SHEET_NAME = "Sons"
+ALLOWED_ORIGINS = "https://VOTRE-PSEUDO.github.io"
+MAX_UPLOAD_MB = "50"
+
+# Les secrets NE se mettent PAS ici. Lancez plutôt :
+#   npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_JSON   (collez tout le fichier .json sur une ligne)
+#   npx wrangler secret put APPS_SCRIPT_URL
+#   npx wrangler secret put APPS_SCRIPT_SECRET
+#   npx wrangler secret put ADMIN_PASSWORD

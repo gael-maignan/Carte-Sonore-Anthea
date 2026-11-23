@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Administration – Carte sonore</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+  :root { --ink: #1d2433; --muted: #6b7385; --line: #e4e7ee; --bg: #f4f6fa; --accent: #e4572e; --blue: #2f6fde; --ok: #1a7f4b; --err: #b42318; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); font-size: 14px; }
+  #layout { display: grid; grid-template-columns: 430px 1fr; height: 100%; }
+  aside { overflow-y: auto; padding: 16px; border-right: 1px solid var(--line); background: var(--bg); }
+  #map { height: 100%; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  header h1 { font-size: 17px; margin: 0; }
+  .links { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .links a, .links button { font: inherit; font-size: 13px; color: var(--blue); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; text-decoration: none; cursor: pointer; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .card h2 { font-size: 15px; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: center; }
+  label { display: block; font-weight: 600; font-size: 13px; margin: 10px 0 4px; }
+  input[type=text], input[type=search], input[type=password], textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: #fff; }
+  textarea { min-height: 80px; resize: vertical; }
+  .row { display: flex; gap: 8px; } .row > * { flex: 1; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .drop { display: block; border: 2px dashed #cdd3df; border-radius: 10px; padding: 16px; text-align: center; color: var(--muted); cursor: pointer; font-weight: 400; margin: 0; }
+  .drop.over { border-color: var(--accent); background: #fff6f2; }
+  .drop input { display: none; }
+  .drop strong { color: var(--ink); }
+  audio { width: 100%; margin-top: 8px; height: 36px; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 9px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.danger { color: var(--err); border-color: #f1c5c0; margin-left: auto; }
+  .btn:disabled { opacity: .55; cursor: wait; }
+  .progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 12px; display: none; }
+  .progress.show { display: block; } .progress div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .msg { margin-top: 10px; font-size: 13px; min-height: 1em; white-space: pre-wrap; }
+  .msg.ok { color: var(--ok); } .msg.error { color: var(--err); }
+  .meta { display: inline-block; background: var(--bg); border-radius: 6px; padding: 3px 8px; color: var(--muted); font-size: 12px; margin-top: 8px; }
+  #list { list-style: none; margin: 10px 0 0; padding: 0; }
+  #list li { display: flex; align-items: center; gap: 8px; padding: 9px 4px; border-top: 1px solid var(--line); }
+  #list li.active { background: #fff6f2; }
+  #list .info { flex: 1; min-width: 0; cursor: pointer; }
+  #list .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #list .m { color: var(--muted); font-size: 12px; }
+  #list button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+  .pin { width: 26px; height: 26px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); display: grid; place-items: center; color: #fff; font-size: 12px; }
+  .pin.sel { background: var(--accent); width: 32px; height: 32px; font-size: 14px; }
+  .pin.other { background: var(--blue); }
+  #login { position: fixed; inset: 0; background: rgba(29,36,51,.55); display: grid; place-items: center; z-index: 5000; }
+  #login.hidden { display: none; }
+  #login form { background: #fff; padding: 24px; border-radius: 14px; width: min(360px, 92vw); }
+  #login h2 { margin: 0 0 6px; font-size: 18px; }
+  @media (max-width: 860px) {
+    #layout { grid-template-columns: 1fr; grid-template-rows: 45vh auto; height: auto; }
+    #map { height: 45vh; position: sticky; top: 0; z-index: 10; order: -1; }
+    aside { border-right: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <form id="login-form">
+    <h2>Administration</h2>
+    <p class="hint">Entrez le mot de passe défini dans le worker (ADMIN_PASSWORD).</p>
+    <label for="pwd">Mot de passe</label>
+    <input id="pwd" type="password" autocomplete="current-password" required>
+    <div class="actions"><button class="btn primary" type="submit" id="login-btn">Se connecter</button></div>
+    <div class="msg error" id="login-msg"></div>
+  </form>
+</div>
+
+<div id="layout">
+  <aside>
+    <header>
+      <h1>🎧 <span id="site-title">Carte sonore</span> – admin</h1>
+    </header>
+    <div class="links">
+      <a href="index.html" target="_blank">🗺 Voir la carte</a>
+      <a id="sheet-link" href="#" target="_blank" rel="noopener">📄 Google Sheet</a>
+      <a id="drive-link" href="#" target="_blank" rel="noopener">📁 Dossier Drive</a>
+      <button id="logout" type="button">Se déconnecter</button>
+    </div>
+
+    <form class="card" id="form" novalidate>
+      <h2><span id="form-title">Ajouter un son</span><button type="button" class="btn" id="new-btn" style="padding:4px 10px;font-size:12px;display:none">+ Nouveau</button></h2>
+
+      <div id="file-block">
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.opus,.aac">
+          <span id="drop-text"><strong>Choisir un fichier audio</strong><br>ou le glisser ici</span>
+        </label>
+      </div>
+      <audio id="preview" controls preload="none" hidden></audio>
+      <div id="file-meta"></div>
+
+      <label for="title">Titre *</label>
+      <input type="text" id="title" maxlength="200" required>
+
+      <label for="description">Description</label>
+      <textarea id="description" maxlength="5000"></textarea>
+
+      <label>Position *</label>
+      <div class="row">
+        <input type="text" id="addr" placeholder="Rechercher une adresse…">
+        <button type="button" class="btn" id="addr-btn" style="flex:none">Chercher</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="lat" placeholder="Latitude" inputmode="decimal">
+        <input type="text" id="lng" placeholder="Longitude" inputmode="decimal">
+      </div>
+      <div class="hint">Cliquez sur la carte pour placer le son, puis déplacez le marqueur orange pour ajuster.</div>
+
+      <div class="progress" id="progress"><div></div></div>
+      <div class="actions">
+        <button class="btn primary" type="submit" id="save">Ajouter le son</button>
+        <button class="btn" type="button" id="cancel">Annuler</button>
+        <button class="btn danger" type="button" id="delete" hidden>Supprimer</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </form>
+
+    <section class="card">
+      <h2><span>Sons existants (<span id="count">0</span>)</span><button class="btn" type="button" id="reload" style="padding:4px 10px;font-size:12px">↻</button></h2>
+      <input type="search" id="filter" placeholder="Filtrer…">
+      <ul id="list"></ul>
+    </section>
+  </aside>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="config.js"></script>
+<script>
+(() => {
+  const CFG = window.CARTE_SONORE_CONFIG || {};
+  const API = (CFG.API_URL || '').replace(/\/+$/, '');
+  const MAX_MB = Number(CFG.MAX_UPLOAD_MB || 50);
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = v => { const n = parseFloat(String(v).replace(',', '.')); return Number.isFinite(n) ? n : null; };
+  const fmt = sec => { const s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60; return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`; };
+
+  $('#site-title').textContent = CFG.MAP_TITLE || 'Carte sonore';
+  if (CFG.SHEET_URL) $('#sheet-link').href = CFG.SHEET_URL; else $('#sheet-link').hidden = true;
+  if (CFG.DRIVE_FOLDER_URL) $('#drive-link').href = CFG.DRIVE_FOLDER_URL; else $('#drive-link').hidden = true;
+
+  let password = sessionStorage.getItem('cs_admin_pwd') || '';
+  const state = { items: [], mode: 'new', editId: null, file: null, duration: null, previewUrl: null, busy: false };
+
+  /* ---------- API ---------- */
+  async function api(path, { method = 'GET', json } = {}) {
+    const headers = {};
+    if (password) headers.Authorization = 'Bearer ' + encodeURIComponent(password);
+    let body;
+    if (json !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(json); }
+    let res;
+    try { res = await fetch(API + path, { method, headers, body }); }
+    catch { throw new Error('Worker injoignable (vérifiez API_URL dans config.js et ALLOWED_ORIGINS dans le worker).'); }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const e = new Error(data.error || 'Erreur ' + res.status); e.status = res.status; throw e; }
+    return data;
+  }
+
+  function uploadWithProgress(fd) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', API + '/upload');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + encodeURIComponent(password));
+      xhr.upload.onprogress = e => { if (e.lengthComputable) progress(e.loaded / e.total * 0.9, `Envoi… ${Math.round(e.loaded / e.total * 100)} %`); };
+      xhr.upload.onload = () => progress(0.95, 'Enregistrement dans Google Drive et dans la feuille…');
+      xhr.onload = () => {
+        let d = {}; try { d = JSON.parse(xhr.responseText); } catch {}
+        if (xhr.status >= 200 && xhr.status < 300) resolve(d);
+        else { const e = new Error(d.error || 'Erreur ' + xhr.status); e.status = xhr.status; reject(e); }
+      };
+      xhr.onerror = () => reject(new Error('Erreur réseau pendant l\'envoi (fichier trop gros ? worker injoignable ?).'));
+      xhr.send(fd);
+    });
+  }
+
+  function streamUrl(id) {
+    const u = new URL(CFG.STREAM_URL || 'https://stream.gael-maignan.workers.dev/');
+    u.searchParams.set('id', id);
+    if (CFG.GOOGLE_API_KEY && !/COLLEZ/.test(CFG.GOOGLE_API_KEY)) u.searchParams.set('key', CFG.GOOGLE_API_KEY);
+    return u.toString();
+  }
+
+  /* ---------- UI helpers ---------- */
+  function msg(text, type = '') { const el = $('#msg'); el.textContent = text; el.className = 'msg ' + type; }
+  function progress(p, text) {
+    const el = $('#progress');
+    if (p === null) { el.classList.remove('show'); el.firstElementChild.style.width = 0; return; }
+    el.classList.add('show'); el.firstElementChild.style.width = Math.round(p * 100) + '%';
+    if (text) msg(text);
+  }
+  function setBusy(b) { state.busy = b; ['#save', '#cancel', '#delete', '#new-btn'].forEach(s => $(s).disabled = b); }
+  function handleErr(err) {
+    if (err.status === 401) { showLogin('Session expirée ou mot de passe incorrect.'); }
+    msg(err.message, 'error');
+  }
+
+  /* ---------- Login ---------- */
+  function showLogin(text = '') { $('#login').classList.remove('hidden'); $('#login-msg').textContent = text; $('#pwd').focus(); }
+  $('#login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    password = $('#pwd').value;
+    $('#login-btn').disabled = true; $('#login-msg').textContent = '';
+    try {
+      await api('/login', { method: 'POST' });
+      sessionStorage.setItem('cs_admin_pwd', password);
+      $('#login').classList.add('hidden');
+      loadItems();
+    } catch (err) {
+      $('#login-msg').textContent = err.message;
+    } finally { $('#login-btn').disabled = false; }
+  });
+  $('#logout').addEventListener('click', () => { sessionStorage.removeItem('cs_admin_pwd'); password = ''; $('#pwd').value = ''; showLogin(); });
+
+  /* ---------- Carte ---------- */
+  const map = L.map('map').setView(CFG.MAP_CENTER || [46.6, 2.4], CFG.MAP_ZOOM || 6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd', maxZoom: 20
+  }).addTo(map);
+  const othersLayer = L.layerGroup().addTo(map);
+  const selIcon = L.divIcon({ className: '', html: '<div class="pin sel">♪</div>', iconSize: [32, 32], iconAnchor: [16, 16] });
+  const otherIcon = L.divIcon({ className: '', html: '<div class="pin other">♪</div>', iconSize: [26, 26], iconAnchor: [13, 13] });
+  let selMarker = null;
+
+  function setPosition(lat, lng, { pan = false } = {}) {
+    lat = Math.round(lat * 1e6) / 1e6; lng = Math.round(lng * 1e6) / 1e6;
+    $('#lat').value = lat; $('#lng').value = lng;
+    if (!selMarker) {
+      selMarker = L.marker([lat, lng], { draggable: true, icon: selIcon, zIndexOffset: 1000 }).addTo(map);
+      selMarker.on('dragend', () => { const p = selMarker.getLatLng(); setPosition(p.lat, p.lng); });
+    } else selMarker.setLatLng([lat, lng]);
+    if (pan) map.setView([lat, lng], Math.max(map.getZoom(), 16));
+  }
+  function clearPosition() { if (selMarker) { map.removeLayer(selMarker); selMarker = null; } $('#lat').value = ''; $('#lng').value = ''; }
+
+  map.on('click', e => { if (!state.busy) setPosition(e.latlng.lat, e.latlng.lng); });
+  ['#lat', '#lng'].forEach(s => $(s).addEventListener('change', () => {
+    const la = num($('#lat').value), ln = num($('#lng').value);
+    if (la !== null && ln !== null && Math.abs(la) <= 90 && Math.abs(ln) <= 180) setPosition(la, ln, { pan: true });
+  }));
+
+  async function geocode() {
+    const q = $('#addr').value.trim(); if (!q) return;
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=fr&q=' + encodeURIComponent(q));
+      const d = await r.json();
+      if (!d.length) return msg('Adresse introuvable.', 'error');
+      setPosition(+d[0].lat, +d[0].lon, { pan: true }); msg('');
+    } catch { msg('Recherche d\'adresse indisponible.', 'error'); }
+  }
+  $('#addr-btn').addEventListener('click', geocode);
+  $('#addr').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); geocode(); } });
+
+  function renderMarkers() {
+    othersLayer.clearLayers();
+    state.items.forEach(it => {
+      if (it.id === state.editId || !Number.isFinite(it.lat) || !Number.isFinite(it.lng)) return;
+      L.marker([it.lat, it.lng], { icon: otherIcon, title: it.title })
+        .on('click', () => { if (!state.busy) edit(it.id); })
+        .bindTooltip(esc(it.title))
+        .addTo(othersLayer);
+    });
+  }
+
+  /* ---------- Fichier ---------- */
+  function getDuration(url) {
+    return new Promise(resolve => {
+      const a = new Audio(); a.preload = 'metadata';
+      const done = d => resolve(Number.isFinite(d) && d > 0 ? d : null);
+      a.onloadedmetadata = () => {
+        if (a.duration === Infinity) { // certains webm/ogg : astuce pour forcer le calcul
+          a.currentTime = 1e7;
+          a.ontimeupdate = () => { a.ontimeupdate = null; done(a.duration); };
+        } else done(a.duration);
+      };
+      a.onerror = () => done(null);
+      setTimeout(() => done(null), 15000);
+      a.src = url;
+    });
+  }
+
+  async function setFile(file) {
+    if (!file) return;
+    const isAudio = (file.type || '').startsWith('audio/') || /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm|weba)$/i.test(file.name);
+    if (!isAudio) return msg('Ce fichier n\'est pas un fichier audio.', 'error');
+    if (file.size > MAX_MB * 1024 * 1024) return msg(`Fichier trop volumineux (${(file.size / 1048576).toFixed(1)} Mo, max ${MAX_MB} Mo).`, 'error');
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    state.file = file;
+    state.previewUrl = URL.createObjectURL(file);
+    $('#drop-text').innerHTML = `<strong>${esc(file.name)}</strong><br>${(file.size / 1048576).toFixed(1)} Mo — cliquer pour changer`;
+    $('#preview').src = state.previewUrl; $('#preview').hidden = false;
+    if (!$('#title').value.trim()) $('#title').value = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+    state.duration = await getDuration(state.previewUrl);
+    $('#file-meta').innerHTML = `<span class="meta">⏱ Durée : ${state.duration ? fmt(state.duration) : 'inconnue'}</span>`;
+    msg('');
+  }
+  $('#file').addEventListener('change', e => setFile(e.target.files[0]));
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => setFile(e.dataTransfer.files[0]));
+
+  /* ---------- Modes ---------- */
+  function startNew(keepMsg = false) {
+    state.mode = 'new'; state.editId = null; state.file = null; state.duration = null;
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl); state.previewUrl = null;
+    $('#form').reset();
+    $('#form-title').textContent = 'Ajouter un son';
+    $('#save').textContent = 'Ajouter le son';
+    $('#file-block').hidden = false; $('#delete').hidden = true; $('#new-btn').style.display = 'none';
+    $('#drop-text').innerHTML = '<strong>Choisir un fichier audio</strong><br>ou le glisser ici';
+    $('#preview').pause(); $('#preview').removeAttribute('src'); $('#preview').hidden = true;
+    $('#file-meta').innerHTML = '';
+    clearPosition(); progress(null);
+    if (!keepMsg) msg('');
+    renderMarkers(); renderList();
+  }
+
+  function edit(id, keepMsg = false) {
+    const it = state.items.find(i => i.id === id); if (!it) return startNew();
+    state.mode = 'edit'; state.editId = id; state.file = null;
+    $('#form-title').textContent = 'Modifier le son';
+    $('#save').textContent = 'Enregistrer les modifications';
+    $('#file-block').hidden = true; $('#delete').hidden = false; $('#new-btn').style.display = '';
+    $('#title').value = it.title; $('#description').value = it.description;
+    $('#preview').src = streamUrl(it.id); $('#preview').hidden = false;
+    $('#file-meta').innerHTML = `<span class="meta">📎 ${esc(it.fileName || it.id)}${it.duration ? ' · ⏱ ' + esc(it.duration) : ''}</span> <a class="meta" href="${esc(it.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Drive ↗</a>`;
+    if (Number.isFinite(it.lat) && Number.isFinite(it.lng)) setPosition(it.lat, it.lng, { pan: true }); else clearPosition();
+    progress(null);
+    if (!keepMsg) msg('');
+    renderMarkers(); renderList();
+    if (matchMedia('(max-width: 860px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  $('#cancel').addEventListener('click', () => startNew());
+  $('#new-btn').addEventListener('click', () => startNew());
+
+  /* ---------- Enregistrer ---------- */
+  $('#form').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (state.busy) return;
+    const title = $('#title').value.trim();
+    const description = $('#description').value.trim();
+    const lat = num($('#lat').value), lng = num($('#lng').value);
+    if (state.mode === 'new' && !state.file) return msg('Choisissez un fichier audio.', 'error');
+    if (!title) return msg('Le titre est obligatoire.', 'error');
+    if (lat === null || lng === null) return msg('Choisissez une position en cliquant sur la carte.', 'error');
+
+    setBusy(true);
+    try {
+      if (state.mode === 'new') {
+        const fd = new FormData();
+        fd.append('file', state.file, state.file.name);
+        fd.append('title', title);
+        fd.append('description', description);
+        fd.append('lat', lat); fd.append('lng', lng);
+        if (state.duration) fd.append('duration', state.duration);
+        progress(0, 'Envoi… 0 %');
+        await uploadWithProgress(fd);
+        await loadItems();
+        startNew(true);
+        msg('✔ Son ajouté à la carte.', 'ok');
+      } else {
+        await api('/update', { method: 'POST', json: { id: state.editId, title, description, lat, lng } });
+        await loadItems();
+        edit(state.editId, true);
+        msg('✔ Modifications enregistrées.', 'ok');
+      }
+    } catch (err) { progress(null); handleErr(err); }
+    finally { setBusy(false); }
+  });
+
+  /* ---------- Supprimer ---------- */
+  $('#delete').addEventListener('click', async () => {
+    const it = state.items.find(i => i.id === state.editId); if (!it) return;
+    if (!confirm(`Supprimer « ${it.title} » ?\n\nLa ligne sera retirée de la feuille et le fichier placé dans la corbeille du Drive.`)) return;
+    setBusy(true);
+    try {
+      const d = await api('/delete', { method: 'POST', json: { id: it.id } });
+      await loadItems();
+      startNew(true);
+      msg(d.warning ? '⚠ ' + d.warning : '✔ Son supprimé.', d.warning ? 'error' : 'ok');
+    } catch (err) { handleErr(err); }
+    finally { setBusy(false); }
+  });
+
+  /* ---------- Liste ---------- */
+  function renderList() {
+    const q = $('#filter').value.trim().toLowerCase();
+    const list = state.items.filter(it => !q || (it.title + ' ' + it.description).toLowerCase().includes(q));
+    $('#count').textContent = state.items.length;
+    $('#list').innerHTML = list.length ? '' : '<li class="hint">Aucun son pour l\'instant.</li>';
+    list.forEach(it => {
+      const li = document.createElement('li');
+      if (it.id === state.editId) li.className = 'active';
+      li.innerHTML = `<div class="info"><div class="t">${esc(it.title)}</div><div class="m">${esc(it.duration || '–')} · ${Number.isFinite(it.lat) ? it.lat.toFixed(4) + ', ' + it.lng.toFixed(4) : 'sans position'}</div></div><button type="button">Modifier</button>`;
+      const go = () => { if (!state.busy) edit(it.id); };
+      li.querySelector('.info').addEventListener('click', go);
+      li.querySelector('button').addEventListener('click', go);
+      $('#list').appendChild(li);
+    });
+  }
+  $('#filter').addEventListener('input', renderList);
+  $('#reload').addEventListener('click', () => loadItems().catch(handleErr));
+
+  async function loadItems() {
+    const d = await api('/list?fresh=1');
+    state.items = (d.items || []).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    renderMarkers(); renderList();
+    return state.items;
+  }
+
+  /* ---------- Démarrage ---------- */
+  if (!API || /VOTRE-SOUS-DOMAINE/.test(API)) {
+    showLogin('⚠ Configurez API_URL dans config.js avant de continuer.');
+  } else if (!password) {
+    showLogin();
+  } else {
+    api('/login', { method: 'POST' })
+      .then(() => { $('#login').classList.add('hidden'); return loadItems(); })
+      .then(items => { const pts = items.filter(i => Number.isFinite(i.lat)); if (pts.length) map.fitBounds(pts.map(i => [i.lat, i.lng]), { padding: [40, 40], maxZoom: 16 }); })
+      .catch(err => err.status === 401 ? showLogin('Mot de passe incorrect.') : (showLogin(err.message)));
+  }
+})();
+</script>
+</body>
+</html>
